@@ -29,49 +29,19 @@ export SYNX_ROOT="$KERNEL_DIR/techpack/synx-kernel"
 export TOUCH_ROOT="$KERNEL_DIR/techpack/touch-drivers"
 export WLAN_ROOT="$KERNEL_DIR/techpack/wlan"
 
-curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
-
-# Function to check for existing Clang
-check_clang() {
-    if [ -d "$CLANG_DIR" ] && [ -f "$CLANG_DIR/bin/clang" ]; then
-        export PATH="$CLANG_DIR/bin:$PATH"
-        export KBUILD_COMPILER_STRING="$($CLANG_DIR/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-        echo "Found existing Clang: $KBUILD_COMPILER_STRING"
-        return 0
-    fi
-    return 1
-}
-
-# Install Clang if needed
-if ! check_clang; then
-    echo "No valid Clang found. Installing..."
-    echo "1. AOSP Clang (clang-r487747c)"
-    echo "2. Prelude Clang"
-    read -p "Choose [1-2]: " clang_choice
-
-    case "$clang_choice" in
-        1)
-            CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android14-release/clang-r487747c.tar.gz"
-            ARCHIVE_NAME="clang.tar.gz"
-            mkdir -p "$CLANG_DIR"
-            wget -P "$MAIN" "$CLANG_URL" -O "$MAIN/$ARCHIVE_NAME" || exit 1
-            tar -xf "$MAIN/$ARCHIVE_NAME" -C "$CLANG_DIR" --strip-components=1 || exit 1
-            rm -f "$MAIN/$ARCHIVE_NAME"
-            ;;
-        2)
-            git clone --depth=1 https://gitlab.com/jjpprrrr/prelude-clang.git "$CLANG_DIR" || exit 1
-            ;;
-        *)
-            echo "Invalid choice. Exiting..."
-            exit 1
-            ;;
-    esac
-
-    if ! check_clang; then
-        echo "Clang installation failed. Exiting..."
-        exit 1
-    fi
+# Install ZyCromerZ Clang automatically without asking
+CLANG_URL="https://github.com/ZyCromerZ/Clang/releases/download/22.0.0git-20250928-release/Clang-22.0.0git-20250928.tar.gz"
+if [ ! -d "$CLANG_DIR/bin" ]; then
+    echo "Downloading and extracting ZyCromerZ Clang 22..."
+    mkdir -p "$CLANG_DIR"
+    wget -qO "$MAIN/clang.tar.gz" "$CLANG_URL" || exit 1
+    tar -xf "$MAIN/clang.tar.gz" -C "$CLANG_DIR" --strip-components=1 || exit 1
+    rm -f "$MAIN/clang.tar.gz"
 fi
+
+export PATH="$CLANG_DIR/bin:$PATH"
+export KBUILD_COMPILER_STRING="$($CLANG_DIR/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+echo "Using Clang: $KBUILD_COMPILER_STRING"
 
 # Set up toolchain
 export LD=ld.lld
@@ -90,7 +60,7 @@ INCLUDE_PATHS="
     -I$DISPLAY_ROOT/include
 "
 
-# Build flags
+# Build flags (Added LTO=thin)
 MAKE_OPTS="
     CC=clang
     STRIP=llvm-strip
@@ -105,6 +75,7 @@ MAKE_OPTS="
     HOSTLD=ld.lld
     LLVM=1
     LLVM_IAS=1
+    LTO=thin
     $INCLUDE_PATHS
 "
 
@@ -216,7 +187,6 @@ if [ $BUILD_HAS_MODULES -gt 0 ]; then
     for module in "${IMPORTANT_MODULES[@]}"; do
         find "$MODULES_DIR/lib/modules" -name "$module" -exec cp -v {} "$TEMP_ANY_KERNEL_DIR/_modules/" \;
     done
-
 
     echo "Modules in _modules:"
     ls -lh "$TEMP_ANY_KERNEL_DIR/_modules"
