@@ -224,20 +224,8 @@ if [ $BUILD_HAS_MODULES -gt 0 ]; then
         mkdir -p "$TEMP_ANY_KERNEL_DIR/_modules"
     fi
 
-    # List of specific modules to include
-    IMPORTANT_MODULES=(
-        "ipam.ko" "ipanetm.ko"
-        "msm_drm.ko" "msm_kgsl.ko"
-        "qti_cpufreq_cdev.ko" "qti_devfreq_cdev.ko" "rmnet_offload.ko" "rmnet_shs.ko"
-        "synaptics_tcm2.ko" "xiaomi_touch.ko"
-        "cnss_nl.ko" "cnss_plat_ipc_qmi_svc.ko" "cnss_prealloc.ko" "cnss_utils.ko" "cnss2.ko"
-        "wlan_firmware_service.ko" "mhi.ko" "qrtr-mhi.ko" "qca_cld3_kiwi_v2.ko"
-    )
-
-    # Find and copy each specified module
-    for module in "${IMPORTANT_MODULES[@]}"; do
-        find "$MODULES_DIR/lib/modules" -name "$module" -exec cp -v {} "$TEMP_ANY_KERNEL_DIR/_modules/" \;
-    done
+    # Copy all compiled modules
+    find "$MODULES_DIR/lib/modules" -name "*.ko" -exec cp -v {} "$TEMP_ANY_KERNEL_DIR/_modules/" \;
 
     echo "Modules in _modules:"
     ls -lh "$TEMP_ANY_KERNEL_DIR/_modules"
