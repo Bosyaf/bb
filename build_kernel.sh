@@ -33,21 +33,6 @@ curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/ke
 
 # Function to check for existing Clang
 check_clang() {
-    if [ -d "$CLANG_DIR" ] && [ -f "$CLANG_DIR/bin/clang" ]; then
-        export PATH="$CLANG_DIR/bin:$PATH"
-        export KBUILD_COMPILER_STRING="$($CLANG_DIR/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-        echo "Found existing Clang: $KBUILD_COMPILER_STRING"
-        return 0
-    fi
-    return 1
-}
-
-# Install LLVM/Clang 17.0.2 if needed
-CLANG_DIR="$MAIN/toolchains/clang-17.0.2"
-CLANG_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.2/clang%2Bllvm-17.0.2-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
-ARCHIVE_NAME="clang-17.0.2.tar.xz"
-
-check_clang() {
     [ -x "$CLANG_DIR/bin/clang" ] &&
     [ -x "$CLANG_DIR/bin/clang++" ] &&
     [ -x "$CLANG_DIR/bin/ld.lld" ] &&
@@ -56,25 +41,32 @@ check_clang() {
     [ -x "$CLANG_DIR/bin/llvm-strip" ]
 }
 
+# Install ZYC Clang 22 if needed
+CLANG_DIR="$MAIN/toolchains/clang-zyc22"
+CLANG_URL="https://github.com/ZyCromerZ/Clang/releases/download/22.0.0git-20250928-release/Clang-22.0.0git-20250928.tar.gz"
+ARCHIVE_NAME="clang-zyc22.tar.gz"
+
 if ! check_clang; then
-    echo "LLVM/Clang 17.0.2 indiriliyor..."
+    echo "ZYC Clang 22 indiriliyor..."
     mkdir -p "$CLANG_DIR"
 
     wget -O "$MAIN/$ARCHIVE_NAME" "$CLANG_URL"
-    tar -xJf "$MAIN/$ARCHIVE_NAME" \
+    tar -xzf "$MAIN/$ARCHIVE_NAME" \
         --strip-components=1 -C "$CLANG_DIR"
     rm -f "$MAIN/$ARCHIVE_NAME"
 fi
 
 if ! check_clang; then
-    echo "HATA: LLVM/Clang 17.0.2 kurulumu tamamlanamadi."
+    echo "HATA: ZYC Clang 22 kurulumu tamamlanamadi."
     ls -lah "$CLANG_DIR"
     ls -lah "$CLANG_DIR/bin" || true
     exit 1
 fi
 
-# Use the same LLVM toolchain for compiler and linker
 export PATH="$CLANG_DIR/bin:$PATH"
+export KBUILD_COMPILER_STRING="$($CLANG_DIR/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+echo "Found existing Clang: $KBUILD_COMPILER_STRING"
+
 export CC="$CLANG_DIR/bin/clang"
 export CXX="$CLANG_DIR/bin/clang++"
 export HOSTCC="$CLANG_DIR/bin/clang"
@@ -127,6 +119,7 @@ MAKE_OPTS="
     LLVM_IAS=1
     LTO=thin
     KCFLAGS=-march=armv8.4-a
+    KCFLAGS=-march=armv9.2-a
     $INCLUDE_PATHS
 "
 
