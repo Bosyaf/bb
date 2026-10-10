@@ -42,36 +42,63 @@ check_clang() {
     return 1
 }
 
-# Install AOSP Clang if needed
+# Install LLVM/Clang 17.0.2 if needed
+CLANG_DIR="$MAIN/toolchains/clang-17.0.2"
+CLANG_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.2/clang%2Bllvm-17.0.2-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
+ARCHIVE_NAME="clang-17.0.2.tar.xz"
+
+check_clang() {
+    [ -x "$CLANG_DIR/bin/clang" ] &&
+    [ -x "$CLANG_DIR/bin/clang++" ] &&
+    [ -x "$CLANG_DIR/bin/ld.lld" ] &&
+    [ -x "$CLANG_DIR/bin/llvm-ar" ] &&
+    [ -x "$CLANG_DIR/bin/llvm-nm" ] &&
+    [ -x "$CLANG_DIR/bin/llvm-strip" ]
+}
+
 if ! check_clang; then
-    echo "No valid Clang found. Installing AOSP Clang..."
-
-    CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android14-release/clang-r487747c.tar.gz"
-    ARCHIVE_NAME="clang.tar.gz"
-
+    echo "LLVM/Clang 17.0.2 indiriliyor..."
     mkdir -p "$CLANG_DIR"
+
     wget -O "$MAIN/$ARCHIVE_NAME" "$CLANG_URL"
-
-    # Extract without removing the archive's root directory
-    tar -xzf "$MAIN/$ARCHIVE_NAME" -C "$CLANG_DIR"
+    tar -xJf "$MAIN/$ARCHIVE_NAME" \
+        --strip-components=1 -C "$CLANG_DIR"
     rm -f "$MAIN/$ARCHIVE_NAME"
-
-    if ! check_clang; then
-        echo "Clang installation failed."
-        echo "Clang directory: $CLANG_DIR"
-        ls -lah "$CLANG_DIR"
-        ls -lah "$CLANG_DIR/bin" || true
-        exit 1
-    fi
 fi
 
-# Set up toolchain
+if ! check_clang; then
+    echo "HATA: LLVM/Clang 17.0.2 kurulumu tamamlanamadi."
+    ls -lah "$CLANG_DIR"
+    ls -lah "$CLANG_DIR/bin" || true
+    exit 1
+fi
+
+# Use the same LLVM toolchain for compiler and linker
 export PATH="$CLANG_DIR/bin:$PATH"
+export CC="$CLANG_DIR/bin/clang"
+export CXX="$CLANG_DIR/bin/clang++"
+export HOSTCC="$CLANG_DIR/bin/clang"
+export HOSTCXX="$CLANG_DIR/bin/clang++"
 export LD="$CLANG_DIR/bin/ld.lld"
+export HOSTLD="$CLANG_DIR/bin/ld.lld"
+export AR="$CLANG_DIR/bin/llvm-ar"
+export HOSTAR="$CLANG_DIR/bin/llvm-ar"
+export NM="$CLANG_DIR/bin/llvm-nm"
+export STRIP="$CLANG_DIR/bin/llvm-strip"
+export OBJCOPY="$CLANG_DIR/bin/llvm-objcopy"
+export OBJDUMP="$CLANG_DIR/bin/llvm-objdump"
+export LLVM=1
+export LLVM_IAS=1
+
+export KBUILD_COMPILER_STRING="$("$CC" --version | head -n 1)"
+echo "Kullanilan Clang: $KBUILD_COMPILER_STRING"
+echo "Kullanilan LLD: $("$LD" --version | head -n 1)"
+
+# Set up target
 export ARCH=arm64
 export SUBARCH=arm64
 export CROSS_COMPILE=aarch64-linux-gnu-
-export KCFLAGS="-Xclang -target-feature -Xclang +tlb-rmi"
+
 # Include paths
 export KERNEL_SRC="$KERNEL_DIR"
 INCLUDE_PATHS="
