@@ -71,7 +71,7 @@ export LD="$CLANG_DIR/bin/ld.lld"
 export ARCH=arm64
 export SUBARCH=arm64
 export CROSS_COMPILE=aarch64-linux-gnu-
-
+export KCFLAGS="-Xclang -target-feature -Xclang +tlb-rmi"
 # Include paths
 export KERNEL_SRC="$KERNEL_DIR"
 INCLUDE_PATHS="
