@@ -29,7 +29,75 @@ export SYNX_ROOT="$KERNEL_DIR/techpack/synx-kernel"
 export TOUCH_ROOT="$KERNEL_DIR/techpack/touch-drivers"
 export WLAN_ROOT="$KERNEL_DIR/techpack/wlan"
 
-curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+
+# KernelSU-Next & Multi-Manager
+echo "[1/5] KernelSU-Next kuruluyor (Bosyaf/Ksu-next)..."
+
+cd "$KERNEL_DIR/common"
+rm -rf KernelSU-Next
+git clone --depth=1 https://github.com/Bosyaf/Ksu-next.git KernelSU-Next
+bash KernelSU-Next/kernel/setup.sh
+
+echo "[2/5] Multi-Manager patch uygulanıyor..."
+PATCH="$KERNEL_DIR/patches/ksu/ksun-add-more-managers-support.patch"
+
+if [ -f "$PATCH" ]; then
+    cd "$KERNEL_DIR/common/KernelSU-Next"
+    if patch -p1 --forward < "$PATCH"; then
+        echo "Multi-Manager patch uygulandı."
+    else
+        echo "UYARI: Multi-Manager patch uygulanamadı."
+    fi
+else
+    echo "UYARI: Multi-Manager patch bulunamadı."
+fi
+
+# SUSFS4KSU
+echo "[3/5] SUSFS4KSU kuruluyor..."
+cd "$KERNEL_DIR/common"
+rm -rf susfs4ksu
+git clone --depth=1 https://github.com/Bosyaf/Susfs.git susfs4ksu
+
+cp -R susfs4ksu/kernel_patches/fs/* ./fs/
+cp -R susfs4ksu/kernel_patches/include/* ./include/
+
+SUSFS_PATCH=$(find susfs4ksu/kernel_patches -maxdepth 1 \
+    -name '50_add_susfs*.patch' -print -quit)
+
+if [ -n "$SUSFS_PATCH" ]; then
+    patch -p1 < "$SUSFS_PATCH" || true
+else
+    echo "UYARI: Ana SUSFS patch bulunamadı."
+fi
+
+echo "[4/5] fs_namespace.patch uygulanıyor..."
+wget -q \
+    "https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/fs_namespace.patch" \
+    -O fs_namespace.patch ||
+curl -fLSs \
+    "https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/fs_namespace.patch" \
+    -o fs_namespace.patch
+
+if [ -s fs_namespace.patch ]; then
+    patch -p1 < fs_namespace.patch || true
+else
+    echo "UYARI: fs_namespace.patch indirilemedi."
+fi
+rm -f fs_namespace.patch
+
+echo "[5/5] SUSFS Dentry Check Fix uygulanıyor..."
+sed -i \
+'s/return (base->d_inode->i_mapping->flags & BIT_ANDROID_DATA_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_DATA_ROOT_DIR));/g' \
+fs/susfs.c
+
+sed -i \
+'s/return (base->d_inode->i_mapping->flags & BIT_ANDROID_SDCARD_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_SDCARD_ROOT_DIR));/g' \
+fs/susfs.c
+
+find "$KERNEL_DIR/common" -name '*.rej' -delete 2>/dev/null || true
+rm -rf "$KERNEL_DIR/common/susfs4ksu"
+
+cd "$KERNEL_DIR"
 
 # Function to check for existing Clang
 check_clang() {
