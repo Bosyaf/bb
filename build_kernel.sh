@@ -4,7 +4,7 @@ set -e
 # Configuration
 DIR=$(readlink -f .)
 MAIN=$(readlink -f ${DIR}/..)
-KERNEL_DEFCONFIG=peridot_defconfig
+KERNEL_DEFCONFIG=shen_gki_defconfig
 CLANG_DIR="$MAIN/toolchains/clang-1"
 KERNEL_DIR=$(pwd)
 OUT_DIR="$KERNEL_DIR/out"
@@ -126,6 +126,7 @@ MAKE_OPTS="
     LLVM=1
     LLVM_IAS=1
     LTO=thin
+    KCFLAGS=-march=armv8.4-a
     $INCLUDE_PATHS
 "
 
