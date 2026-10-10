@@ -29,6 +29,7 @@ export SYNX_ROOT="$KERNEL_DIR/techpack/synx-kernel"
 export TOUCH_ROOT="$KERNEL_DIR/techpack/touch-drivers"
 export WLAN_ROOT="$KERNEL_DIR/techpack/wlan"
 
+curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
 
 # Function to check for existing Clang
 check_clang() {
