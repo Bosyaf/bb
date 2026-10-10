@@ -29,19 +29,19 @@ export SYNX_ROOT="$KERNEL_DIR/techpack/synx-kernel"
 export TOUCH_ROOT="$KERNEL_DIR/techpack/touch-drivers"
 export WLAN_ROOT="$KERNEL_DIR/techpack/wlan"
 
-# Install ZyCromerZ Clang automatically without asking
-CLANG_URL="https://github.com/ZyCromerZ/Clang/releases/download/22.0.0git-20250928-release/Clang-22.0.0git-20250928.tar.gz"
+# AOSP Clang İndirme ve Kurulumu
+CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/darwin-x86/+archive/refs/heads/android14-security-release/clang-r487747c.tar.gz"
 if [ ! -d "$CLANG_DIR/bin" ]; then
-    echo "Downloading and extracting ZyCromerZ Clang 22..."
+    echo "Clang indiriliyor ve kuruluyor..."
     mkdir -p "$CLANG_DIR"
     wget -qO "$MAIN/clang.tar.gz" "$CLANG_URL" || exit 1
-    tar -xf "$MAIN/clang.tar.gz" -C "$CLANG_DIR" --strip-components=1 || exit 1
+    tar -xf "$MAIN/clang.tar.gz" -C "$CLANG_DIR" || exit 1
     rm -f "$MAIN/clang.tar.gz"
 fi
 
 export PATH="$CLANG_DIR/bin:$PATH"
 export KBUILD_COMPILER_STRING="$($CLANG_DIR/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-echo "Using Clang: $KBUILD_COMPILER_STRING"
+echo "Kullanılan Clang: $KBUILD_COMPILER_STRING"
 
 # Set up toolchain
 export LD=ld.lld
@@ -60,7 +60,7 @@ INCLUDE_PATHS="
     -I$DISPLAY_ROOT/include
 "
 
-# Build flags (Added LTO=thin)
+# Build flags (Thin LTO aktif)
 MAKE_OPTS="
     CC=clang
     STRIP=llvm-strip
@@ -207,3 +207,4 @@ DIFF=$((BUILD_END - BUILD_START))
 echo -e "\nBuild completed in $((DIFF / 60))m $((DIFF % 60))s"
 echo "Final zip: $KERNEL_DIR/$ZIP_NAME"
 echo "Zip size: $(du -h "$KERNEL_DIR/$ZIP_NAME" | cut -f1)"
+
