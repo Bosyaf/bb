@@ -29,7 +29,62 @@ export SYNX_ROOT="$KERNEL_DIR/techpack/synx-kernel"
 export TOUCH_ROOT="$KERNEL_DIR/techpack/touch-drivers"
 export WLAN_ROOT="$KERNEL_DIR/techpack/wlan"
 
-curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+
+# KernelSU-Next & Multi-Manager
+cd "$KERNEL_DIR/common"
+
+echo "[1/5] KernelSU-Next kuruluyor (Bosyaf/Ksu-next)..."
+rm -rf KernelSU-Next
+git clone --depth=1 https://github.com/Bosyaf/Ksu-next.git KernelSU-Next
+bash KernelSU-Next/kernel/setup.sh
+
+echo "[2/5] Multi-Manager patch uygulanıyor..."
+PATCH="$KERNEL_DIR/patches/ksu/ksun-add-more-managers-support.patch"
+
+if [ -f "$PATCH" ]; then
+    cd KernelSU-Next
+    patch -p1 --forward < "$PATCH" || true
+    cd ..
+else
+    echo "Multi-Manager patch bulunamadı, atlanıyor."
+fi
+
+# SUSFS4KSU
+cd "$KERNEL_DIR/common"
+
+echo "[3/5] SUSFS kuruluyor..."
+rm -rf susfs4ksu
+git clone --depth=1 https://github.com/Bosyaf/Susfs.git susfs4ksu
+
+cp -R susfs4ksu/kernel_patches/fs/* ./fs/
+cp -R susfs4ksu/kernel_patches/include/* ./include/
+
+SUSFS_PATCH=$(find susfs4ksu/kernel_patches -maxdepth 1 -name '50_add_susfs*.patch' -print -quit)
+
+if [ -n "$SUSFS_PATCH" ]; then
+    patch -p1 < "$SUSFS_PATCH" || true
+fi
+
+echo "[4/5] fs_namespace.patch uygulanıyor..."
+wget -q https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/fs_namespace.patch \
+    -O fs_namespace.patch ||
+curl -fLSs https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/fs_namespace.patch \
+    -o fs_namespace.patch
+
+if [ -f fs_namespace.patch ]; then
+    patch -p1 < fs_namespace.patch || true
+fi
+
+rm -f fs_namespace.patch
+
+echo "[5/5] SUSFS Dentry Check Fix..."
+sed -i 's/return (base->d_inode->i_mapping->flags & BIT_ANDROID_DATA_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_DATA_ROOT_DIR));/g' fs/susfs.c
+sed -i 's/return (base->d_inode->i_mapping->flags & BIT_ANDROID_SDCARD_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_SDCARD_ROOT_DIR));/g' fs/susfs.c
+
+find . -name '*.rej' -delete 2>/dev/null || true
+rm -rf susfs4ksu
+
+cd "$KERNEL_DIR"
 
 # Function to check for existing Clang
 check_clang() {
@@ -145,6 +200,27 @@ echo "**** Defconfig: $KERNEL_DEFCONFIG ****"
 # Build kernel
 make O="$OUT_DIR" $KERNEL_DEFCONFIG $MAKE_OPTS || exit 1
 make -j$(nproc --all) O="$OUT_DIR" $MAKE_OPTS || exit 1
+
+CONFIG_FILE="$OUT_DIR/.config"
+
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_SUS_PATH
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_SUS_MOUNT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_SUS_KSTAT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_TRY_UMOUNT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_SPOOF_UNAME
+./scripts/config --file "$CONFIG_FILE" --disable CONFIG_KSU_SUSFS_ENABLE_LOG
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_OPEN_REDIRECT
+./scripts/config --file "$CONFIG_FILE" --enable CONFIG_KSU_SUSFS_SUS_MAP
+
+make O="$OUT_DIR" olddefconfig
 
 # Build DTB/DTBO if they exist
 if [ -d "$DTB_DTBO_DIR" ]; then
