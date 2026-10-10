@@ -45,21 +45,29 @@ check_clang() {
 # Install AOSP Clang if needed
 if ! check_clang; then
     echo "No valid Clang found. Installing AOSP Clang..."
+
     CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android14-release/clang-r487747c.tar.gz"
     ARCHIVE_NAME="clang.tar.gz"
+
     mkdir -p "$CLANG_DIR"
-    wget -P "$MAIN" "$CLANG_URL" -O "$MAIN/$ARCHIVE_NAME" || exit 1
-    tar -xf "$MAIN/$ARCHIVE_NAME" -C "$CLANG_DIR" --strip-components=1 || exit 1
+    wget -O "$MAIN/$ARCHIVE_NAME" "$CLANG_URL"
+
+    # Extract without removing the archive's root directory
+    tar -xzf "$MAIN/$ARCHIVE_NAME" -C "$CLANG_DIR"
     rm -f "$MAIN/$ARCHIVE_NAME"
 
     if ! check_clang; then
-        echo "Clang installation failed. Exiting..."
+        echo "Clang installation failed."
+        echo "Clang directory: $CLANG_DIR"
+        ls -lah "$CLANG_DIR"
+        ls -lah "$CLANG_DIR/bin" || true
         exit 1
     fi
 fi
 
 # Set up toolchain
-export LD=ld.lld
+export PATH="$CLANG_DIR/bin:$PATH"
+export LD="$CLANG_DIR/bin/ld.lld"
 export ARCH=arm64
 export SUBARCH=arm64
 export CROSS_COMPILE=aarch64-linux-gnu-
