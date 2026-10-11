@@ -224,14 +224,33 @@ if [ $BUILD_HAS_MODULES -gt 0 ]; then
         mkdir -p "$TEMP_ANY_KERNEL_DIR/_modules"
     fi
 
-    # List of specific modules to include
+        # List of specific modules to include
     IMPORTANT_MODULES=(
+        # --- Orijinal Çalışan Dosyalar ---
         "ipam.ko" "ipanetm.ko"
         "msm_drm.ko" "msm_kgsl.ko"
         "qti_cpufreq_cdev.ko" "qti_devfreq_cdev.ko" "rmnet_offload.ko" "rmnet_shs.ko"
         "synaptics_tcm2.ko" "xiaomi_touch.ko"
         "cnss_nl.ko" "cnss_plat_ipc_qmi_svc.ko" "cnss_prealloc.ko" "cnss_utils.ko" "cnss2.ko"
         "wlan_firmware_service.ko" "mhi.ko" "qrtr-mhi.ko" "qca_cld3_kiwi_v2.ko"
+
+        # --- YENİ EKLENENLER (Ses, Kamera, Güvenlik, Senkronizasyon) ---
+        
+        # Audio (Ses) Modülleri
+        "machine_dlkm.ko" "adsp_loader_dlkm.ko" "wcd938x_dlkm.ko" "wcd939x_dlkm.ko"
+        "snd_event_dlkm.ko" "q6_pdr_dlkm.ko" "cs35l41_dlkm.ko" "cs35l43_dlkm.ko"
+        "swr_ctrl_dlkm.ko" "aw882xx_dlkm.ko" "wsa883x_dlkm.ko" "wsa884x_dlkm.ko"
+        "lpass_cdc_dlkm.ko" "q6_dlkm.ko" "q6_notifier_dlkm.ko"
+
+        # Kamera ve Multimedya Modülleri
+        "camera.ko" "camcc-volcano.ko" "msm-mmrm.ko"
+
+        # SecureMSM (Güvenlik, Parmak izi, Şifreleme) Modülleri
+        "smcinvoke_dlkm.ko" "qce50_dlkm.ko" "tz_log_dlkm.ko" 
+        "qcrypto-msm_dlkm.ko" "qcedev-mod_dlkm.ko"
+
+        # Video/Kare Senkronizasyon Modülü
+        "synx-driver.ko"
     )
 
     # Find and copy each specified module
