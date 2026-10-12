@@ -42,10 +42,10 @@ check_clang() {
     return 1
 }
 
-# Install LLVM/Clang 17.0.2 if needed
-CLANG_DIR="$MAIN/toolchains/clang-17.0.2"
-CLANG_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.2/clang%2Bllvm-17.0.2-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
-ARCHIVE_NAME="clang-17.0.2.tar.xz"
+# Install ZyC Clang 22.0.0git
+CLANG_DIR="$MAIN/toolchains/zyc-clang-22"
+CLANG_URL="https://github.com/ZyCromerZ/Clang/releases/download/22.0.0git-20250928-release/Clang-22.0.0git-20250928.tar.gz"
+ARCHIVE_NAME="zyc-clang-22.tar.gz"
 
 check_clang() {
     [ -x "$CLANG_DIR/bin/clang" ] &&
@@ -57,17 +57,19 @@ check_clang() {
 }
 
 if ! check_clang; then
-    echo "LLVM/Clang 17.0.2 indiriliyor..."
+    echo "ZyC Clang 22.0.0 indiriliyor..."
     mkdir -p "$CLANG_DIR"
 
     wget -O "$MAIN/$ARCHIVE_NAME" "$CLANG_URL"
-    tar -xJf "$MAIN/$ARCHIVE_NAME" \
-        --strip-components=1 -C "$CLANG_DIR"
+    
+    # ZyC tar.gz kullandığı için -xzf ile çıkarıyoruz.
+    # --strip-components komutunu sildik çünkü ZyC'nin yapısını bozar.
+    tar -xzf "$MAIN/$ARCHIVE_NAME" -C "$CLANG_DIR"
     rm -f "$MAIN/$ARCHIVE_NAME"
 fi
 
 if ! check_clang; then
-    echo "HATA: LLVM/Clang 17.0.2 kurulumu tamamlanamadi."
+    echo "HATA: ZyC Clang 22 kurulumu tamamlanamadi."
     ls -lah "$CLANG_DIR"
     ls -lah "$CLANG_DIR/bin" || true
     exit 1
@@ -126,7 +128,7 @@ MAKE_OPTS="
     LLVM=1
     LLVM_IAS=1
     LTO=thin
-    KCFLAGS=-march=armv8.4-a
+    KCFLAGS=-march=armv9.2-a
     $INCLUDE_PATHS
 "
 
