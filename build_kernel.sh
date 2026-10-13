@@ -179,7 +179,37 @@ INCLUDE_PATHS="
 "
 
 # Build flags
-export KCFLAGS="-march=armv9.2-a -Wno-uninitialized-const-pointer -Wno-uninitialized"
+export KCFLAGS="-O2 \
+    -march=armv9.2-a+crypto+crc+dotprod+rcpc+lse+sha3 \
+    -falign-functions=32 \
+    -fomit-frame-pointer \
+    -ffunction-sections \
+    -fdata-sections \
+    -fstack-protector \
+    -fno-unwind-tables \
+    -fno-asynchronous-unwind-tables \
+    -fno-math-errno \
+    -fno-semantic-interposition \
+    -Wno-frame-larger-than \
+    -Wno-unused-command-line-argument \
+    -Wno-error \
+    -Wno-format \
+    -Wno-format-extra-args \
+    -Wno-constant-logical-operand \
+    -Wno-unused-variable \
+    -Wno-address-of-packed-member \
+    -Wno-uninitialized-const-pointer \
+    -Wno-uninitialized \
+    -Wno-default-const-init-var-unsafe \
+    -Wno-default-const-init-field-unsafe"
+
+export KLDFLAGS="-Wl,--gc-sections \
+    -Wl,--as-needed \
+    -Wl,--strip-debug \
+    -Wl,--icf=safe \
+    -Wl,--no-warnings \
+    -Wl,-O2"
+
 MAKE_OPTS="
     CC=clang
     STRIP=llvm-strip
