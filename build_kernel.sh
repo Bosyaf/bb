@@ -29,7 +29,73 @@ export SYNX_ROOT="$KERNEL_DIR/techpack/synx-kernel"
 export TOUCH_ROOT="$KERNEL_DIR/techpack/touch-drivers"
 export WLAN_ROOT="$KERNEL_DIR/techpack/wlan"
 
-curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+echo "====================================================="
+echo "🛡️ KSU-NEXT + SUSFS + MULTI-MANAGER KURULUMU BAŞLIYOR"
+echo "====================================================="
+
+# 1. KSU-Next Kurulumu
+echo "📦 [1/5] KernelSU-Next kuruluyor..."
+git clone --depth=1 https://github.com/Bosyaf/Ksu-next.git KernelSU-Next
+bash KernelSU-Next/kernel/setup.sh
+echo "✅ [1/5] KernelSU-Next kurulumu tamamlandı!"
+
+# 2. Multi-Manager Patch Uygulaması (İnternetten Canlı Çekim)
+echo "🔥 [2/5] Multi-Manager patch uygulanıyor..."
+wget -q "https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/patches/ksu/ksun-add-more-managers-support.patch" -O ksun-add-more-managers-support.patch || \
+curl -LSs "https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/patches/ksu/ksun-add-more-managers-support.patch" -o ksun-add-more-managers-support.patch
+
+if [ -f "ksun-add-more-managers-support.patch" ]; then
+  cd KernelSU-Next
+  patch -p1 --forward < "../ksun-add-more-managers-support.patch" && \
+  echo "✅ [2/5] Multi-Manager patch başarılı!" || echo "⚠️ [2/5] Patch uygulanamadı (Zaten uygulanmış olabilir)"
+  cd ..
+  rm -f ksun-add-more-managers-support.patch
+else
+  echo "⚠️ [2/5] Patch dosyası internetten çekilemedi, atlanıyor..."
+fi
+
+# 3. SUSFS İndirme ve Dosya Kopyalama
+echo "📦 [3/5] SUSFS kuruluyor..."
+git clone --depth=1 https://github.com/Bosyaf/Susfs.git susfs4ksu
+echo "📦 SUSFS dosyaları kopyalanıyor..."
+cp -R susfs4ksu/kernel_patches/fs/* ./fs/
+cp -R susfs4ksu/kernel_patches/include/* ./include/
+echo "✅ [3/5] SUSFS dosyaları kopyalandı!"
+
+# 3.1 Ana SUSFS Patch Uygulaması
+echo "📦 [3.1/5] Ana SUSFS patch uygulanıyor..."
+SUSFS_PATCH=$(ls susfs4ksu/kernel_patches/50_add_susfs*.patch 2>/dev/null | head -1)
+if [ -n "$SUSFS_PATCH" ]; then
+  patch -p1 < "$SUSFS_PATCH" || true
+  echo "✅ [3.1/5] Ana SUSFS patch uygulandı!"
+else
+  echo "⚠️ [3.1/5] Patch dosyası bulunamadı, atlanıyor..."
+fi
+
+# 4. fs_namespace Patch Uygulaması
+echo "📦 [4/5] fs_namespace.patch uygulanıyor..."
+wget -q "https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/fs_namespace.patch" -O fs_namespace.patch || \
+curl -LSs "https://raw.githubusercontent.com/Bosyaf/Kernel-Action/main/fs_namespace.patch" -o fs_namespace.patch
+
+if [ -f fs_namespace.patch ]; then
+  patch -p1 < fs_namespace.patch || true
+  echo "✅ [4/5] fs_namespace.patch uygulandı!"
+else
+  echo "⚠️ [4/5] Patch bulunamadı"
+fi
+rm -f fs_namespace.patch
+
+# 5. SUSFS Dentry Check Fix (Canlı Sed Yaması)
+echo "🛡️ [5/5] SUSFS Dentry Check Fix (Canlı Yama) uygulanıyor..."
+sed -i 's/return (base->d_inode->i_mapping->flags & BIT_ANDROID_DATA_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_DATA_ROOT_DIR));/g' fs/susfs.c
+sed -i 's/return (base->d_inode->i_mapping->flags & BIT_ANDROID_SDCARD_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_SDCARD_ROOT_DIR));/g' fs/susfs.c
+echo "✅ [5/5] Canlı Yama Başarılı!"
+
+# Temizlik
+find . -name "*.rej" -delete 2>/dev/null || true
+rm -rf susfs4ksu
+echo "🎉 SUSFS VE KSU SİSTEMİ KUSURSUZ KURULDU!"
+echo "====================================================="
 
 # Function to check for existing Clang
 check_clang() {
