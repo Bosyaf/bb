@@ -89,6 +89,8 @@ rm -f fs_namespace.patch
 echo "🛡️ [5/5] SUSFS Dentry Check Fix (Canlı Yama) uygulanıyor..."
 sed -i 's/return (base->d_inode->i_mapping->flags & BIT_ANDROID_DATA_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_DATA_ROOT_DIR));/g' fs/susfs.c
 sed -i 's/return (base->d_inode->i_mapping->flags & BIT_ANDROID_SDCARD_ROOT_DIR);/return (base \&\& !IS_ERR(base) \&\& base->d_inode \&\& (base->d_inode->i_mapping->flags \& BIT_ANDROID_SDCARD_ROOT_DIR));/g' fs/susfs.c
+# HOUJI CUSTOM FIX: True/False çakışmasını gideren Canlı Yama
+sed -i 's/extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;/extern struct static_key_false susfs_is_sdcard_android_data_not_decrypted;/g' fs/namespace.c
 echo "✅ [5/5] Canlı Yama Başarılı!"
 
 # Temizlik
