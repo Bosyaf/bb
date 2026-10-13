@@ -250,7 +250,7 @@ echo "====================================================="
 CONFIG_FILE="$OUT_DIR/.config"
 
 # 1. CMDLINE
-./scripts/config --file $CONFIG_FILE --set-str CONFIG_CMDLINE "console=ttynull stack_depot_disable=on kvm-arm.mode=protected bootconfig noirqdebug nosoftlockup nmi_watchdog=0 quiet kasan.page_alloc.sample=0 kasan.stacktrace=off kasan=off slub_debug=- page_owner=off cpufreq.default_governor=sched_walt"
+./scripts/config --file $CONFIG_FILE --set-str CONFIG_CMDLINE "console=ttynull stack_depot_disable=on kvm-arm.mode=protected bootconfig noirqdebug nosoftlockup nmi_watchdog=0 quiet kasan.page_alloc.sample=0 kasan.stacktrace=off kasan=off slub_debug=- page_owner=off cpufreq.default_governor=walt"
 ./scripts/config --file $CONFIG_FILE --enable CONFIG_CMDLINE_EXTEND
 
 # 2. ZAMANLAYICI & GÜÇ (HZ 300, BORE, THERMAL)
