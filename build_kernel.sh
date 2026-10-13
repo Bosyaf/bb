@@ -250,11 +250,12 @@ echo "====================================================="
 CONFIG_FILE="$OUT_DIR/.config"
 
 # 1. CMDLINE
-./scripts/config --file $CONFIG_FILE --set-str CONFIG_CMDLINE "console=ttynull stack_depot_disable=on kvm-arm.mode=protected bootconfig noirqdebug nosoftlockup nmi_watchdog=0 quiet kasan.page_alloc.sample=0 kasan.stacktrace=off kasan=off slub_debug=- page_owner=off cpufreq.default_governor=walt"
+./scripts/config --file $CONFIG_FILE --set-str CONFIG_CMDLINE "console=ttynull stack_depot_disable=on kvm-arm.mode=protected bootconfig noirqdebug nosoftlockup nmi_watchdog=0 quiet kasan.page_alloc.sample=0 kasan.stacktrace=off kasan=off slub_debug=- page_owner=off"
 ./scripts/config --file $CONFIG_FILE --enable CONFIG_CMDLINE_EXTEND
 
 # 2. ZAMANLAYICI & GÜÇ (HZ 300, BORE, THERMAL)
 ./scripts/config --file $CONFIG_FILE --module CONFIG_SCHED_WALT
+./scripts/config --file $CONFIG_FILE --disable CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_SCHED_CLUSTER
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_SCHED_SMT
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_HZ_100
@@ -291,8 +292,6 @@ CONFIG_FILE="$OUT_DIR/.config"
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_NUMA_BALANCING
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_REDUCED
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_COMPRESSED
-./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_SPLIT
-# ./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_DWARF4
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_DWARF5
 
 # 5. KERNELSU & SUSFS MODÜLLERİ
@@ -314,7 +313,7 @@ CONFIG_FILE="$OUT_DIR/.config"
 ./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_MAP
 
 # Localversion
-./scripts/config --file $CONFIG_FILE --set-str CONFIG_LOCALVERSION "-Maeglin"
+./scripts/config --file $CONFIG_FILE --set-str CONFIG_LOCALVERSION "-Voronwe"
 ./scripts/config --file $CONFIG_FILE --disable CONFIG_LOCALVERSION_AUTO
 
 # 2. Config değişikliklerini doğrula ve bağımlılıkları bağla (ŞARTTIR)
