@@ -4,7 +4,7 @@ set -e
 # Configuration
 DIR=$(readlink -f .)
 MAIN=$(readlink -f ${DIR}/..)
-KERNEL_DEFCONFIG=shen_gki_defconfig
+KERNEL_DEFCONFIG="shen_gki_defconfig vendor/houji_GKI.config"
 CLANG_DIR="$MAIN/toolchains/clang-1"
 KERNEL_DIR=$(pwd)
 OUT_DIR="$KERNEL_DIR/out"
