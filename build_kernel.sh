@@ -4,7 +4,7 @@ set -e
 # Configuration
 DIR=$(readlink -f .)
 MAIN=$(readlink -f ${DIR}/..)
-KERNEL_DEFCONFIG="shen_gki_defconfig vendor/houji_GKI.config"
+KERNEL_DEFCONFIG=shen_gki_defconfig
 CLANG_DIR="$MAIN/toolchains/clang-1"
 KERNEL_DIR=$(pwd)
 OUT_DIR="$KERNEL_DIR/out"
@@ -242,88 +242,7 @@ echo "**** Defconfig: $KERNEL_DEFCONFIG ****"
 
 # 1. Defconfig oluşturuluyor (Ana .config dosyası OUT_DIR içerisinde yaratılır)
 make O="$OUT_DIR" $KERNEL_DEFCONFIG $MAKE_OPTS || exit 1
-
-echo "====================================================="
-echo "⚙️ ÖZEL CONFIG'LER KERNEL'E ENTEGRE EDİLİYOR..."
-echo "====================================================="
-
-CONFIG_FILE="$OUT_DIR/.config"
-
-# 1. CMDLINE
-./scripts/config --file $CONFIG_FILE --set-str CONFIG_CMDLINE "console=ttynull stack_depot_disable=on kvm-arm.mode=protected bootconfig noirqdebug nosoftlockup nmi_watchdog=0 quiet kasan.page_alloc.sample=0 kasan.stacktrace=off kasan=off slub_debug=- page_owner=off"
-./scripts/config --file $CONFIG_FILE --enable CONFIG_CMDLINE_EXTEND
-
-# 2. ZAMANLAYICI & GÜÇ (HZ 300, BORE, THERMAL)
-./scripts/config --file $CONFIG_FILE --module CONFIG_SCHED_WALT
-./scripts/config --file $CONFIG_FILE --disable CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
-./scripts/config --file $CONFIG_FILE --disable CONFIG_SCHED_CLUSTER
-./scripts/config --file $CONFIG_FILE --disable CONFIG_SCHED_SMT
-./scripts/config --file $CONFIG_FILE --disable CONFIG_HZ_100
-./scripts/config --file $CONFIG_FILE --disable CONFIG_HZ_250
-./scripts/config --file $CONFIG_FILE --enable CONFIG_HZ_300
-./scripts/config --file $CONFIG_FILE --disable CONFIG_HZ_500
-./scripts/config --file $CONFIG_FILE --disable CONFIG_HZ_1000
-./scripts/config --file $CONFIG_FILE --set-val CONFIG_HZ 300
-./scripts/config --file $CONFIG_FILE --enable CONFIG_NO_HZ_IDLE
-./scripts/config --file $CONFIG_FILE --disable CONFIG_NO_HZ_FULL
-./scripts/config --file $CONFIG_FILE --enable CONFIG_THERMAL_GOV_STEP_WISE
-./scripts/config --file $CONFIG_FILE --enable CONFIG_THERMAL_GOV_POWER_ALLOCATOR
-./scripts/config --file $CONFIG_FILE --disable CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE
-./scripts/config --file $CONFIG_FILE --enable CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
-
-# 3. PERFORMANS: PREEMPTION & THIN LTO 
-./scripts/config --file $CONFIG_FILE --enable CONFIG_LTO_CLANG
-./scripts/config --file $CONFIG_FILE --enable CONFIG_LTO_CLANG_THIN
-./scripts/config --file $CONFIG_FILE --disable CONFIG_LTO_CLANG_FULL
-./scripts/config --file $CONFIG_FILE --disable CONFIG_PREEMPT_NONE
-./scripts/config --file $CONFIG_FILE --disable CONFIG_PREEMPT_VOLUNTARY
-./scripts/config --file $CONFIG_FILE --enable CONFIG_PREEMPT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_PREEMPT_COUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_PREEMPTION
-./scripts/config --file $CONFIG_FILE --enable CONFIG_PREEMPT_BUILD
-
-# 4. GİZLİLİK, AĞ & DEBUG KAPATMA
-./scripts/config --file $CONFIG_FILE --enable CONFIG_WIREGUARD
-./scripts/config --file $CONFIG_FILE --enable CONFIG_IP_NF_TARGET_TTL
-./scripts/config --file $CONFIG_FILE --enable CONFIG_IP6_NF_TARGET_HL
-./scripts/config --file $CONFIG_FILE --enable CONFIG_IP6_NF_MATCH_HL
-./scripts/config --file $CONFIG_FILE --enable CONFIG_TMPFS_POSIX_ACL
-./scripts/config --file $CONFIG_FILE --enable CONFIG_TMPFS_XATTR
-./scripts/config --file $CONFIG_FILE --disable CONFIG_NUMA_BALANCING
-./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_REDUCED
-./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_COMPRESSED
-./scripts/config --file $CONFIG_FILE --disable CONFIG_DEBUG_INFO_DWARF5
-
-# 5. KERNELSU & SUSFS MODÜLLERİ
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_PATH
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_MOUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_KSTAT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_TRY_UMOUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SPOOF_UNAME
-./scripts/config --file $CONFIG_FILE --disable CONFIG_KSU_SUSFS_ENABLE_LOG
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_OPEN_REDIRECT
-./scripts/config --file $CONFIG_FILE --enable CONFIG_KSU_SUSFS_SUS_MAP
-
-# Localversion
-./scripts/config --file $CONFIG_FILE --set-str CONFIG_LOCALVERSION "-Voronwe"
-./scripts/config --file $CONFIG_FILE --disable CONFIG_LOCALVERSION_AUTO
-
-# 2. Config değişikliklerini doğrula ve bağımlılıkları bağla (ŞARTTIR)
-echo "⚙️ Config bağımlılıkları doğrulanıyor (olddefconfig)..."
 make O="$OUT_DIR" $MAKE_OPTS olddefconfig
-
-echo "✅ Özel config'ler başarıyla entegre edildi!"
-echo "====================================================="
-
-# 3. Asıl Kernel Derlemesi Başlıyor
 make -j$(nproc --all) O="$OUT_DIR" $MAKE_OPTS || exit 1
 
 # Build DTB/DTBO if they exist
