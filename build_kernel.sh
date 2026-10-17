@@ -347,8 +347,7 @@ check_config KSU_SUSFS y
 
 # 6. DERLEME
 echo "==== KERNEL DERLEMESİ BAŞLIYOR ===="
-make -j"$(nproc --all)" O="$OUT_DIR" $MAKE_OPTS V=1 2>&1 | tee "$OUT_DIR/build.log"
-
+make -j"$(nproc --all)" O="$OUT_DIR" $MAKE_OPTS 2>&1 | tee "$OUT_DIR/build.log"
 # 7. DERLEME ÇIKTISI KONTROLÜ
 if [ -s "$ZIMAGE_DIR/Image" ]; then
     echo "[OK] Image oluşturuldu."
