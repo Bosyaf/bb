@@ -240,9 +240,8 @@ YYLL2="$KERNEL_DIR/scripts/dtc/dtc-lexer.l"
 echo "**** Building with $KBUILD_COMPILER_STRING ****"
 echo "**** Defconfig: $KERNEL_DEFCONFIG ****"
 
-# 1. Defconfig oluşturuluyor (Ana .config dosyası OUT_DIR içerisinde yaratılır)
+# Build kernel
 make O="$OUT_DIR" $KERNEL_DEFCONFIG $MAKE_OPTS || exit 1
-make O="$OUT_DIR" $MAKE_OPTS olddefconfig
 make -j$(nproc --all) O="$OUT_DIR" $MAKE_OPTS || exit 1
 
 # Build DTB/DTBO if they exist
