@@ -237,130 +237,13 @@ YYLL2="$KERNEL_DIR/scripts/dtc/dtc-lexer.l"
 [ -f "$YYLL2" ] && sed -i "s/extern YYLTYPE yylloc/YYLTYPE yylloc/g;s/YYLTYPE yylloc/extern YYLTYPE yylloc/g" "$YYLL2"
 
 
-# 1. DEFCONFIG
-echo "==== DEFCONFIG ===="
-make O="$OUT_DIR" $MAKE_OPTS "$KERNEL_DEFCONFIG"
+# Start build process
+echo "**** Building with $KBUILD_COMPILER_STRING ****"
+echo "**** Defconfig: $KERNEL_DEFCONFIG ****"
 
-# 2. CONFIG DOSYASINI BELİRLE
-CONFIG_FILE="$OUT_DIR/.config"
-test -f "$CONFIG_FILE" || {
-    echo "HATA: .config bulunamadi!"
-    exit 1
-}
-
-# 3. İSTENEN CONFIG AYARLARINI UYGULA
-echo "==== CONFIG AYARLARI UYGULANIYOR ===="
-
-scripts/config --file "$CONFIG_FILE" --module SCHED_WALT
-scripts/config --file "$CONFIG_FILE" --disable SCHED_CLUSTER
-scripts/config --file "$CONFIG_FILE" --disable SCHED_SMT
-
-scripts/config --file "$CONFIG_FILE" --disable HZ_100
-scripts/config --file "$CONFIG_FILE" --disable HZ_250
-scripts/config --file "$CONFIG_FILE" --enable HZ_300
-scripts/config --file "$CONFIG_FILE" --disable HZ_500
-scripts/config --file "$CONFIG_FILE" --disable HZ_1000
-scripts/config --file "$CONFIG_FILE" --set-val HZ 300
-
-scripts/config --file "$CONFIG_FILE" --enable NO_HZ_IDLE
-scripts/config --file "$CONFIG_FILE" --disable NO_HZ_FULL
-
-scripts/config --file "$CONFIG_FILE" --enable THERMAL_GOV_STEP_WISE
-scripts/config --file "$CONFIG_FILE" --enable THERMAL_GOV_POWER_ALLOCATOR
-scripts/config --file "$CONFIG_FILE" --disable THERMAL_DEFAULT_GOV_STEP_WISE
-scripts/config --file "$CONFIG_FILE" --enable THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
-
-scripts/config --file "$CONFIG_FILE" --enable LTO_CLANG
-scripts/config --file "$CONFIG_FILE" --enable LTO_CLANG_THIN
-scripts/config --file "$CONFIG_FILE" --disable LTO_CLANG_FULL
-
-scripts/config --file "$CONFIG_FILE" --disable PREEMPT_NONE
-scripts/config --file "$CONFIG_FILE" --disable PREEMPT_VOLUNTARY
-scripts/config --file "$CONFIG_FILE" --enable PREEMPT
-scripts/config --file "$CONFIG_FILE" --enable PREEMPT_COUNT
-scripts/config --file "$CONFIG_FILE" --enable PREEMPTION
-scripts/config --file "$CONFIG_FILE" --enable PREEMPT_BUILD
-
-scripts/config --file "$CONFIG_FILE" --enable WIREGUARD
-scripts/config --file "$CONFIG_FILE" --enable IP_NF_TARGET_TTL
-scripts/config --file "$CONFIG_FILE" --enable IP6_NF_TARGET_HL
-scripts/config --file "$CONFIG_FILE" --enable IP6_NF_MATCH_HL
-scripts/config --file "$CONFIG_FILE" --enable TMPFS_POSIX_ACL
-scripts/config --file "$CONFIG_FILE" --enable TMPFS_XATTR
-
-scripts/config --file "$CONFIG_FILE" --disable NUMA_BALANCING
-scripts/config --file "$CONFIG_FILE" --disable DEBUG_INFO_REDUCED
-scripts/config --file "$CONFIG_FILE" --disable DEBUG_INFO_COMPRESSED
-scripts/config --file "$CONFIG_FILE" --disable DEBUG_INFO_SPLIT
-scripts/config --file "$CONFIG_FILE" --disable DEBUG_INFO_DWARF5
-
-scripts/config --file "$CONFIG_FILE" --enable KSU
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_HAS_MAGIC_MOUNT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_SUS_PATH
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_SUS_MOUNT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_SUS_KSTAT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_TRY_UMOUNT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_SPOOF_UNAME
-scripts/config --file "$CONFIG_FILE" --disable KSU_SUSFS_ENABLE_LOG
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_OPEN_REDIRECT
-scripts/config --file "$CONFIG_FILE" --enable KSU_SUSFS_SUS_MAP
-
-# 4. KCONFIG BAĞIMLILIKLARINI UYGULA
-echo "==== OLDDEFCONFIG ===="
-make O="$OUT_DIR" $MAKE_OPTS olddefconfig
-
-# 5. SON .CONFIG DEĞERLERİNİ KONTROL ET
-echo "==== SON CONFIG KONTROLÜ ===="
-grep -E '^(CONFIG_(SCHED_WALT|HZ|HZ_300|NO_HZ_IDLE|NO_HZ_FULL|THERMAL_|LTO_CLANG|PREEMPT|WIREGUARD|IP_NF_TARGET_TTL|IP6_NF_|TMPFS_|NUMA_BALANCING|DEBUG_INFO_|KSU)|# CONFIG_(SCHED_CLUSTER|SCHED_SMT|HZ_|NO_HZ_FULL|THERMAL_DEFAULT_GOV_STEP_WISE|LTO_CLANG_FULL|PREEMPT_NONE|PREEMPT_VOLUNTARY|NUMA_BALANCING|DEBUG_INFO_|KSU_SUSFS_ENABLE_LOG) is not set)' "$CONFIG_FILE" || true
-
-# Kritik ayarlar olddefconfig sonrasında korunmuş mu?
-check_config() {
-    local symbol="$1"
-    local expected="$2"
-    local actual
-
-    actual=$(grep -E "^(CONFIG_${symbol}=|# CONFIG_${symbol} is not set)" "$CONFIG_FILE" | tail -n 1 || true)
-
-    if [ "$actual" = "CONFIG_${symbol}=${expected}" ] ||
-       { [ "$expected" = "n" ] && [ "$actual" = "# CONFIG_${symbol} is not set" ]; }; then
-        echo "[OK] $symbol = $expected"
-    else
-        echo "[UYARI] $symbol beklenen=$expected, gerçek=${actual:-BULUNAMADI}"
-    fi
-}
-
-check_config SCHED_WALT m
-check_config HZ 300
-check_config HZ_300 y
-check_config LTO_CLANG y
-check_config LTO_CLANG_THIN y
-check_config LTO_CLANG_FULL n
-check_config PREEMPT y
-check_config KSU y
-check_config KSU_SUSFS y
-
-# 6. DERLEME
-echo "==== KERNEL DERLEMESİ BAŞLIYOR ===="
-make -j"$(nproc --all)" O="$OUT_DIR" $MAKE_OPTS 2>&1 | tee "$OUT_DIR/build.log"
-# 7. DERLEME ÇIKTISI KONTROLÜ
-if [ -s "$ZIMAGE_DIR/Image" ]; then
-    echo "[OK] Image oluşturuldu."
-else
-    echo "[HATA] Image bulunamadı!"
-    exit 1
-fi
-
-echo "==== WALT MODÜLÜ KONTROLÜ ===="
-find "$OUT_DIR" -type f -name '*sched*walt*.ko' -print
-
-echo "==== DERLEME TAMAMLANDI ===="
-
+# Build kernel
+make O="$OUT_DIR" $KERNEL_DEFCONFIG $MAKE_OPTS || exit 1
+make -j$(nproc --all) O="$OUT_DIR" $MAKE_OPTS || exit 1
 
 # Build DTB/DTBO if they exist
 if [ -d "$DTB_DTBO_DIR" ]; then
